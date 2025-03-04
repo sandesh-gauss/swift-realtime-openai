@@ -184,7 +184,8 @@ public extension Conversation {
 
 		Task.detached {
 			self.audioEngine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: self.audioEngine.inputNode.outputFormat(forBus: 0)) { [weak self] buffer, _ in
-				self?.processAudioBufferFromUser(buffer: buffer)
+                guard let self else { return }
+                self.processAudioBufferFromUser(buffer: buffer)
 			}
 		}
 
@@ -434,7 +435,11 @@ private extension Conversation {
 		playerNode.play()
 	}
 
-	private func processAudioBufferFromUser(buffer: AVAudioPCMBuffer) {
+	 private func processAudioBufferFromUser(buffer: AVAudioPCMBuffer) {
+         Task { @MainActor in
+             if isPlaying {
+                 return
+             }
 		let ratio = desiredFormat.sampleRate / buffer.format.sampleRate
 
 		guard let convertedBuffer = convertBuffer(buffer: buffer, using: userConverter.get()!, capacity: AVAudioFrameCount(Double(buffer.frameLength) * ratio)) else {
@@ -445,7 +450,6 @@ private extension Conversation {
 		guard let sampleBytes = convertedBuffer.audioBufferList.pointee.mBuffers.mData else { return }
 		let audioData = Data(bytes: sampleBytes, count: Int(convertedBuffer.audioBufferList.pointee.mBuffers.mDataByteSize))
 
-		Task {
 			try await send(audioDelta: audioData)
 		}
 	}
