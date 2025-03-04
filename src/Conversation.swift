@@ -349,10 +349,11 @@ private extension Conversation {
 					message.content[event.contentIndex] = .audio(.init(audio: audio.audio + event.delta, transcript: audio.transcript))
 				}
 			case let .responseFunctionCallArgumentsDelta(event):
-				updateEvent(id: event.itemId) { functionCall in
-					functionCall.arguments.append(event.delta)
-				}
-			case let .responseFunctionCallArgumentsDone(event):
+                guard let index = entries.firstIndex(where: { $0.id == id }), case var .functionCall(functionCall) = entries[index] else {
+                    return
+                }
+                functionCall.arguments.append(event.delta)
+                case let .responseFunctionCallArgumentsDone(event):
 				updateEvent(id: event.itemId) { functionCall in
 					functionCall.arguments = event.arguments
 				}
