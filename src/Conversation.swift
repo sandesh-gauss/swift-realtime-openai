@@ -286,7 +286,7 @@ public extension Conversation {
 
 /// Event handling private API
 private extension Conversation {
-	@MainActor func handleEvent(_ event: ServerEvent) {
+	@MainActor func handleEvent(_ event: ServerEvent) async {
 		switch event {
 			case let .error(event):
 				errorStream.yield(event.error)
@@ -355,8 +355,11 @@ private extension Conversation {
 					functionCall.arguments = event.arguments
 				}
 			case .inputAudioBufferSpeechStarted:
-				isUserSpeaking = true
-				if handlingVoice { interruptSpeech() }
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                if isPlaying {
+                    return
+                }
+                isUserSpeaking = true
 			case .inputAudioBufferSpeechStopped:
 				isUserSpeaking = false
             case let .responseOutputItemDone(event):
@@ -484,7 +487,7 @@ extension Conversation {
 	private func _keepIsPlayingPropertyUpdated() {
 		withObservationTracking { _ = queuedSamples.isEmpty } onChange: {
 			Task { @MainActor in
-				self.isPlaying = self.queuedSamples.isEmpty
+				self.isPlaying = !self.queuedSamples.isEmpty
 			}
 
 			self._keepIsPlayingPropertyUpdated()
