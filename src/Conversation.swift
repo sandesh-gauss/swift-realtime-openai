@@ -82,8 +82,6 @@ public final class Conversation: Sendable {
 					self.connected = false
 				}
 			}
-
-			_keepIsPlayingPropertyUpdated()
 		}
 	}
 
@@ -343,7 +341,10 @@ private extension Conversation {
 				updateEvent(id: event.itemId) { message in
 					guard case let .audio(audio) = message.content[event.contentIndex] else { return }
 
-					if handlingVoice { queueAudioSample(event) }
+                    if handlingVoice {
+                        isPlaying = true
+                        queueAudioSample(event)
+                    }
 					message.content[event.contentIndex] = .audio(.init(audio: audio.audio + event.delta, transcript: audio.transcript))
 				}
 			case let .responseFunctionCallArgumentsDelta(event):
@@ -422,7 +423,12 @@ private extension Conversation {
 			guard let self else { return }
 
 			self.queuedSamples.popFirst()
-			if self.queuedSamples.isEmpty { playerNode.pause() }
+			if self.queuedSamples.isEmpty {
+                playerNode.pause()
+                Task { @MainActor in
+                    isPlaying = false
+                }
+            }
 		}
 
 		playerNode.play()
