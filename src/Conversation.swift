@@ -353,6 +353,7 @@ private extension Conversation {
                     return
                 }
                 functionCall.arguments.append(event.delta)
+                entries[index] = .functionCall(functionCall)
                 case let .responseFunctionCallArgumentsDone(event):
 				updateEvent(id: event.itemId) { functionCall in
 					functionCall.arguments = event.arguments
