@@ -87,12 +87,11 @@ public final class Conversation: Sendable {
 
 	deinit {
 		errorStream.finish()
-
-		DispatchQueue.main.asyncAndWait {
-			cancelTask?()
-			stopHandlingVoice()
-		}
 	}
+    
+    @MainActor public func cleanUp() {
+        cancelTask?()
+    }
 
 	/// Create a new conversation providing an API token and, optionally, a model.
 	public convenience init(authToken token: String, model: String = "gpt-4o-realtime-preview") {
