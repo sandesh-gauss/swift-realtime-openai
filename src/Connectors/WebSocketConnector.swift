@@ -58,8 +58,9 @@ public final class WebSocketConnector: NSObject, Connector, Sendable {
 				case let .success(message):
 					switch message {
 						case let .string(text):
-							self.stream.yield(with: Result { try self.decoder.decode(ServerEvent.self, from: text.data(using: .utf8)!) })
-
+                        if let result = try? self.decoder.decode(ServerEvent.self, from: text.data(using: .utf8)!) {
+                            self.stream.yield(with: Result { result })
+                        }
 						case .data:
 							self.stream.yield(error: RealtimeAPIError.invalidMessage)
 
