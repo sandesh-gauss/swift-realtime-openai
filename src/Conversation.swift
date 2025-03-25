@@ -160,7 +160,7 @@ public final class Conversation: Sendable {
 	/// Optionally, you can provide a response configuration to customize the model's behavior.
 	/// > Note: Calling this function will automatically call `interruptSpeech` if the model is currently speaking.
 	public func send(from role: Item.ItemRole, text: String, response: Response.Config? = nil) async throws {
-		if await handlingVoice { await interruptSpeech() }
+       // if await handlingVoice { await interruptSpeech() }
 
 		try await send(event: .createConversationItem(Item(message: Item.Message(id: String(randomLength: 32), from: role, content: [.input_text(text)]))))
 		try await send(event: .createResponse(response))
@@ -170,6 +170,11 @@ public final class Conversation: Sendable {
 	public func send(result output: Item.FunctionCallOutput) async throws {
 		try await send(event: .createConversationItem(Item(with: output)))
 	}
+    
+    public func send(result output: Item.FunctionCallOutput, response: Response.Config? = nil) async throws {
+        try await send(event: .createConversationItem(Item(with: output)))
+        try await send(event: .createResponse(response))
+    }
 }
 
 /// Listening/Speaking public API
