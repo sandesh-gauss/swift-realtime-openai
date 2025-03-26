@@ -55,6 +55,8 @@ public final class Conversation: Sendable {
 			default: return nil
 		} }
 	}
+    
+    @MainActor public var micLevel: CGFloat = 0.0
 
 	private init(client: RealtimeAPI) {
 		self.client = client
@@ -187,7 +189,7 @@ public extension Conversation {
 		if !handlingVoice { try startHandlingVoice() }
 
 		Task.detached {
-			self.audioEngine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: self.audioEngine.inputNode.outputFormat(forBus: 0)) { [weak self] buffer, _ in
+			self.audioEngine.inputNode.installTap(onBus: 0, bufferSize: 512, format: self.audioEngine.inputNode.outputFormat(forBus: 0)) { [weak self] buffer, _ in
                 guard let self else { return }
                 self.processAudioBufferFromUser(buffer: buffer)
 			}
@@ -423,11 +425,19 @@ private extension Conversation {
 			print("Failed to convert buffer.")
 			return
 		}
+    
 
 		queuedSamples.push(event.itemId)
 
 		playerNode.scheduleBuffer(sample, at: nil, completionCallbackType: .dataPlayedBack) { [weak self] _ in
 			guard let self else { return }
+            let frameLength = Int(sample.frameLength)
+                 if let channelData = sample.floatChannelData?[0] {
+                     let rms = sqrt((0..<frameLength).map { channelData[$0] * channelData[$0] }.reduce(0, +) / Float(frameLength))
+                     Task { @MainActor in
+                         micLevel = CGFloat(rms) * 20
+                     }
+                 }
 
 			self.queuedSamples.popFirst()
 			if self.queuedSamples.isEmpty {
@@ -447,7 +457,11 @@ private extension Conversation {
                  return
              }
 		let ratio = desiredFormat.sampleRate / buffer.format.sampleRate
-
+        let frameLength = Int(buffer.frameLength)
+             if let channelData = buffer.floatChannelData?[0] {
+                 let rms = sqrt((0..<frameLength).map { channelData[$0] * channelData[$0] }.reduce(0, +) / Float(frameLength))
+                 micLevel = CGFloat(rms) * 20
+             }
 		guard let convertedBuffer = convertBuffer(buffer: buffer, using: userConverter.get()!, capacity: AVAudioFrameCount(Double(buffer.frameLength) * ratio)) else {
 			print("Buffer conversion failed.")
 			return
@@ -461,6 +475,7 @@ private extension Conversation {
 	}
 
 	private func convertBuffer(buffer: AVAudioPCMBuffer, using converter: AVAudioConverter, capacity: AVAudioFrameCount) -> AVAudioPCMBuffer? {
+        
 		if buffer.format == converter.outputFormat {
 			return buffer
 		}
