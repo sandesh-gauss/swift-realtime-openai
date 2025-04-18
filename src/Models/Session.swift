@@ -28,6 +28,20 @@ public struct Session: Codable, Equatable, Sendable {
 			self.model = model
 		}
 	}
+    
+    public struct NoiseReduction: Codable, Equatable, Sendable {
+        public enum NoiseReductionType: String, Codable, Sendable {
+            case near_field
+            case far_field
+            case none
+        }
+        
+        public var type: NoiseReductionType
+        
+        public init(type: NoiseReductionType) {
+            self.type = type
+        }
+    }
 
 	public struct TurnDetection: Codable, Equatable, Sendable {
 		public enum TurnDetectionType: String, Codable, Sendable {
@@ -241,6 +255,8 @@ public struct Session: Codable, Equatable, Sendable {
 	public var inputAudioTranscription: InputAudioTranscription?
 	/// Configuration for turn detection.
 	public var turnDetection: TurnDetection?
+    ///Noise Reduction
+    public var input_audio_noise_reduction: NoiseReduction?
 	/// Tools (functions) available to the model.
 	public var tools: [Tool]
 	/// How the model chooses tools.
@@ -260,6 +276,7 @@ public struct Session: Codable, Equatable, Sendable {
 		maxOutputTokens: Int? = nil,
 		toolChoice: ToolChoice = .auto,
 		turnDetection: TurnDetection? = nil,
+        noiseReduction: NoiseReduction? = nil,
 		inputAudioFormat: AudioFormat = .pcm16,
 		outputAudioFormat: AudioFormat = .pcm16,
 		modalities: [Modality] = [.text, .audio],
@@ -274,6 +291,7 @@ public struct Session: Codable, Equatable, Sendable {
 		self.temperature = temperature
 		self.instructions = instructions
 		self.turnDetection = turnDetection
+        self.input_audio_noise_reduction = noiseReduction
 		self.maxOutputTokens = maxOutputTokens
 		self.inputAudioFormat = inputAudioFormat
 		self.outputAudioFormat = outputAudioFormat
